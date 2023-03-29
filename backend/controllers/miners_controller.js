@@ -50,6 +50,9 @@ exports.create = async (req, res) => {
     if (planet === null) {
         return res.status(404).json({error: 'planet not found'})
     }
+    if (planet.minerals < 1000) {
+        return res.status(400).json({error: 'minerals is not enougt'})
+    }
     Miner.create({
         carry_capacity: req.body.carry_capacity,
         travel_speed: req.body.travel_speed,
