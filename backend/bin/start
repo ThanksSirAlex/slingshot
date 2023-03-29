@@ -1,0 +1,186 @@
+#!/usr/bin/env node
+const debug = require('debug')('backend:server');
+const http = require('http');
+const mongoose = require('mongoose');
+const app = require('../app');
+const WebSocket = require('ws');
+
+const Miner = require("../models/miner");
+const Planet = require("../models/planet");
+const History = require("../models/history");
+const Asteroid = require("../models/asteroid");
+
+function normalizePort(val) {
+    const port = parseInt(val, 10);
+
+    if (Number.isNaN(port)) {
+        // named pipe
+        return val;
+    }
+
+    if (port >= 0) {
+        // port number
+        return port;
+    }
+
+    return false;
+}
+
+/**
+ * Get port from environment and store in Express.
+ */
+
+const port = normalizePort(process.env.PORT || '3000');
+
+app.set('port', port);
+
+
+const server = http.createServer(app);
+const wss = new WebSocket.Server({server: server, path: '/ws'});
+
+wss.on('connection', function connection(ws) {
+    console.log('A new client Connected!');
+    ws.send('Welcome New Client!');
+
+    ws.on('message', function incoming(message) {
+        let msg = message.toString()
+        switch (msg) {
+            case 'all':
+                let getData = async () => {
+                   return await Promise.all([Miner.find().exec(), Planet.find().exec(), Asteroid.find().exec()])
+                }
+
+                getData().then(([miners, planets, asteroids]) => {
+                    ws.send(JSON.stringify({miners: miners, planets: planets, asteroids: asteroids}))
+                })
+                break;
+            case 'miners':
+                Miner.find().exec().then((data) => ws.send(JSON.stringify(data)))
+                break
+            case 'planets':
+                Planet.find().exex().then((data) => ws.send(JSON.stringify(data)))
+                break
+            case 'asteroids':
+                Asteroid.find().exec().then((data) => ws.send(JSON.stringify(data)))
+                break
+            default :
+                ws.send('pong')
+        }
+        console.log('received: %s', message);
+
+        // wss.clients.forEach(function each(client) {
+        //     client.send(message);
+        // });
+
+    });
+});
+
+
+/**
+ * Event listener for HTTP server "error" event.
+ */
+async function run() {
+    const connection = mongoose.connection;
+    connection.on("error", console.error.bind(console, "connection error: "));
+    connection.once("open", function () {
+        console.log("MongoDB Connected successfully");
+    });
+
+    try {
+        await mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27017', {
+            useNewUrlParser: true, dbName: process.env.MONGO_DBNAME || 'slingshot_backend_test'
+        });
+    } catch (err) {
+        console.log(err)
+        process.exit(1)
+    }
+    const collections = await connection.db.collections()
+
+    for (let collection of collections) {
+        await collection.drop()
+    }
+
+    await Promise.all([Miner.createCollection(), Planet.createCollection(), Asteroid.createCollection(), History.createCollection()])
+    let plants = await Planet.create([{
+        name: 'plant1', position: {x: Math.floor(Math.random() * 1000), y: Math.floor(Math.random() * 1000)}
+    }, {
+        name: 'plant2', position: {x: Math.floor(Math.random() * 1000), y: Math.floor(Math.random() * 1000)}
+    }, {name: 'plant3', position: {x: Math.floor(Math.random() * 1000), y: Math.floor(Math.random() * 1000)}}])
+    let asteroids = []
+    for (let i = 0; i < 20; i++) {
+        asteroids.push({
+            name: `Asteroid${i + 1}`,
+            position: {x: Math.floor(Math.random() * 1000), y: Math.floor(Math.random() * 1000)},
+            minerals: Math.floor(Math.random() * 400 + 800)
+        })
+    }
+    await Asteroid.create(asteroids)
+    let miners = []
+    for (let i = 0; i < 9; i++) {
+        miners.push({
+            name: `Miner${i + 1}`,
+            planet_id: plants[i % 3].id,
+            position: plants[i % 3].position,
+            carry_capacity: Math.floor(Math.random() * 200) + 1,
+            travel_speed: Math.floor(Math.random() * 200) + 1,
+            mining_speed: Math.floor(Math.random() * 200) + 1
+        })
+    }
+    miners = await Miner.create(miners)
+    let histories = []
+    for (let i = 0; i < 9; i++) {
+        histories.push({miner_id: miners[i].id, desc: `Miner spawn on planet ${plants[i % 3].name}`})
+    }
+    History.create(histories)
+
+
+    server.listen(port);
+
+    /* eslint no-console: 0 */
+    server.on('error', (error) => {
+        if (error.syscall !== 'listen') {
+            throw error;
+        }
+
+        const bind = typeof port === 'string' ? `Pipe ${port}` : `Port ${port}`;
+
+        // handle specific listen errors with friendly messages
+        switch (error.code) {
+            case 'EACCES':
+                console.error(`${bind} requires elevated privileges`);
+                process.exit(1);
+                break;
+            case 'EADDRINUSE':
+                console.error(`${bind} is already in use`);
+                process.exit(1);
+                break;
+            default:
+                throw error;
+        }
+    });
+
+
+    server.on('listening', () => {
+        const addr = server.address();
+        const bind = typeof addr === 'string' ? `pipe ${addr}` : `port ${addr.port}`;
+        debug(`Listening on ${bind}`);
+    });
+}
+
+run().then(() => console.log("server start"));
+
+
+// simulation
+setInterval(() => {
+    // TODO find Idle miners chose a planet randomly and then travel to it.
+
+    // TODO find Traveling miners update position, if reach the planet, change status to mining
+
+    /* TODO
+        Find mining miners subtract minerals from the amount stored in the asteroid, and add the amount to miner's carry.
+        If run out of minerals on a asteroid, change the status of asteroid and change the status of miners.
+        If miners reach his carry_capacity change the status of miners
+    */
+
+    // TODO find miners who are transferring minerals to planet. If reach the planet, change status to Idle and unload the minerals
+}, 1000);
