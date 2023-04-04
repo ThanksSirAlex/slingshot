@@ -10,9 +10,10 @@ class PlanetPopup extends React.Component {
 	}
 
 	render() {
-		return <div className="scrollable">
-			<table>
-				<thead>
+		return (
+			<div className="scrollable">
+				<table>
+					<thead>
 					<tr>
 						<th>Name</th>
 						<th>Carry capacity</th>
@@ -21,38 +22,24 @@ class PlanetPopup extends React.Component {
 						<th>Position (x, y)</th>
 						<th>Status</th>
 					</tr>
-				</thead>
+					</thead>
 
-				<tbody>
-					<tr>
-						<td>Miner 1</td>
-						<td>0/120</td>
-						<td>60</td>
-						<td>20</td>
-						<td>832, 635</td>
-						<td>Mining</td>
-					</tr>
-
-					<tr>
-						<td>Miner 2</td>
-						<td>16/120</td>
-						<td>200</td>
-						<td>45</td>
-						<td>32, 205</td>
-						<td>Traveling</td>
-					</tr>
-
-					<tr>
-						<td>Miner 3</td>
-						<td className="green">120/120</td>
-						<td>87</td>
-						<td>166</td>
-						<td>333, 123</td>
-						<td>Transferring</td>
-					</tr>
-				</tbody>
-			</table>
-		</div>
+					<tbody>
+					{
+						this.props.miners.map(miner => (
+						<tr key={miner.id}>
+							<td>{miner.name}</td>
+							<td>{miner.carried_minerals}/{miner.carry_capacity}</td>
+							<td>{miner.travel_speed}</td>
+							<td>{miner.mining_speed}</td>
+							<td>{miner.position.x}, {miner.position.y}</td>
+							<td>{miner.status}</td>
+						</tr>
+					))}
+					</tbody>
+				</table>
+			</div>
+		)
 	}
 }
 

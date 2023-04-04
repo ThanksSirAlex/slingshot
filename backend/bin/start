@@ -9,6 +9,7 @@ const Miner = require("../models/miner");
 const Planet = require("../models/planet");
 const History = require("../models/history");
 const Asteroid = require("../models/asteroid");
+const GameService = require('../service/game_service')
 
 function normalizePort(val) {
     const port = parseInt(val, 10);
@@ -108,10 +109,12 @@ async function run() {
     }, {name: 'plant3', position: {x: Math.floor(Math.random() * 1000), y: Math.floor(Math.random() * 1000)}}])
     let asteroids = []
     for (let i = 0; i < 20; i++) {
+        const minerals = Math.floor(Math.random() * 400 + 800)
         asteroids.push({
             name: `Asteroid${i + 1}`,
             position: {x: Math.floor(Math.random() * 1000), y: Math.floor(Math.random() * 1000)},
-            minerals: Math.floor(Math.random() * 400 + 800)
+            minerals: minerals,
+            remaining_minerals: minerals
         })
     }
     await Asteroid.create(asteroids)
@@ -119,7 +122,7 @@ async function run() {
     for (let i = 0; i < 9; i++) {
         miners.push({
             name: `Miner${i + 1}`,
-            planet_id: plants[i % 3].id,
+            planet: plants[i % 3]._id,
             position: plants[i % 3].position,
             carry_capacity: Math.floor(Math.random() * 200) + 1,
             travel_speed: Math.floor(Math.random() * 200) + 1,
@@ -171,16 +174,4 @@ run().then(() => console.log("server start"));
 
 
 // simulation
-setInterval(() => {
-    // TODO find Idle miners chose a planet randomly and then travel to it.
-
-    // TODO find Traveling miners update position, if reach the planet, change status to mining
-
-    /* TODO
-        Find mining miners subtract minerals from the amount stored in the asteroid, and add the amount to miner's carry.
-        If run out of minerals on a asteroid, change the status of asteroid and change the status of miners.
-        If miners reach his carry_capacity change the status of miners
-    */
-
-    // TODO find miners who are transferring minerals to planet. If reach the planet, change status to Idle and unload the minerals
-}, 1000);
+setInterval(GameService.loop, 1000);

@@ -1,9 +1,28 @@
 const Planet = require("../models/planet");
+const Miner = require('../models/miner')
 
 exports.list = (req, res) => {
-    Planet.find()
+    Planet.aggregate([
+        {
+            $lookup: {
+                from: 'miners',
+                localField: '_id',
+                foreignField: 'planet',
+                as: 'miners'
+            }
+        },
+        {
+            $project: {
+                _id: 1,
+                name: 1,
+                position: 1,
+                minerals: 1,
+                miners: '$miners'
+            }
+        }
+    ])
         .then(data => {
-            res.status(200).json(data)
+            res.status(200).json(data);
         })
         .catch(err => {
             res.status(400).json({error: err})

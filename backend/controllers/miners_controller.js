@@ -7,7 +7,7 @@ exports.list = (req, res) => {
     if (req.query.planet_id !== undefined && req.query.planet_id !== '') {
         params.planet_id = req.query.planet_id
     }
-    Miner.find(params)
+    Miner.find(params).populate('planet')
         .then((data) => {
             res.status(200).json(data)
         })
@@ -53,17 +53,19 @@ exports.create = async (req, res) => {
     if (planet.minerals < 1000) {
         return res.status(400).json({error: 'minerals is not enougt'})
     }
+    planet.minerals -= 1000
+    await planet.save()
     Miner.create({
         carry_capacity: req.body.carry_capacity,
         travel_speed: req.body.travel_speed,
         mining_speed: req.body.mining_speed,
         name: req.body.name,
-        planet_id: req.body.planet_id,
+        planet: planet,
         position: planet.position
     })
         .then(() => res.sendStatus(201))
         .catch(err => {
-            return res.status(400).json({error: err})
+            res.status(400).json({error: err})
         })
 }
 
