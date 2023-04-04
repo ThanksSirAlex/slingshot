@@ -1,6 +1,3 @@
-### simulation
-I spend too much time on nodejs, express and mongoose. So I found that I didn't have enough time to implement the simulation. But I left some TODO which show the idea on how I'm going to implement it.
-
 ### websocket
 The code of web socket is in `backend/bin/start:41`, path of the websocket url is `ws://localhost:3000/ws`, it implement features as follow:
 1. if client send `miners`, it will return all miners.
@@ -32,7 +29,7 @@ The APIs I build are as follow:
 
 ### How to run
 prepare:
-1. a local mongodb, default uri is `mongodb://localhost:27017`, but you can change it by setting env MONGO_URI
+1. a local mongodb version 6.5+, default uri is `mongodb://localhost:27017`, but you can change it by setting env MONGO_URI
 
 ```
 cd backend
