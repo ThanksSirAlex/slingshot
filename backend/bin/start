@@ -59,7 +59,7 @@ wss.on('connection', function connection(ws) {
                 Miner.find().exec().then((data) => ws.send(JSON.stringify(data)))
                 break
             case 'planets':
-                Planet.find().exex().then((data) => ws.send(JSON.stringify(data)))
+                Planet.find().exec().then((data) => ws.send(JSON.stringify(data)))
                 break
             case 'asteroids':
                 Asteroid.find().exec().then((data) => ws.send(JSON.stringify(data)))

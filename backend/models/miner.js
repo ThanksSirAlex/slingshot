@@ -23,6 +23,12 @@ const minerSchema = new Schema({
     }
 });
 
+minerSchema.methods.distanceToPosition = function (point) {
+    let dx = point.x - this.position.x;
+    let dy = point.y - this.position.y;
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
 minerSchema.methods.distanceToDestination = function () {
     if (!this.destination) {
         throw new Error('current miners does not have a destination');
@@ -62,6 +68,22 @@ minerSchema.methods.moveToDestination = async function () {
     return this.save();
 }
 
+minerSchema.methods.findClosestAsteroid = async function () {
+    let distance, cloestestAsteroid
+    distance = 1000
+    const asteroids = await Asteroid.find({status: 0}).exec()
+    for (let asteroid of asteroids) {
+        let currentDistance = this.distanceToPosition(asteroid.position)
+        if (currentDistance < distance) {
+            cloestestAsteroid = asteroid
+            distance = currentDistance
+        }
+    }
+    this.destination = cloestestAsteroid.position;
+    this.status = 1;
+    await History.create({desc: `start travel to ${cloestestAsteroid.name}`, miner_id: this.id});
+}
+
 minerSchema.methods.setDestination = async function () {
     const randomAsteroid = await Asteroid.getRandomAsteroid();
     this.destination = randomAsteroid.position;
@@ -85,9 +107,7 @@ minerSchema.methods.mine = async function () {
     if (asteroid.remaining_minerals <= 0) {
         asteroid.remaining_minerals = 0
         asteroid.status = 1
-        const planet = await Planet.findById(this.planet).exec()
-        this.status = 3
-        this.destination = planet.position
+        await this.findClosestAsteroid()
     }
 
     this.carried_minerals += minedMinerals

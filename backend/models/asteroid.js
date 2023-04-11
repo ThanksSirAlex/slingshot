@@ -8,13 +8,13 @@ const asteroidSchema = new Schema({
     name: {type: String, required: true},
     position: {type: PointSchema, required: true},
     // ["Has Minerals", "Depleted"]
-    status: {type: Number, enum: [0, 1], required: true, default: 1}
+    status: {type: Number, enum: [0, 1], required: true, default: 0}
 });
 
 asteroidSchema.statics.getRandomAsteroid = async function () {
     const count = await mongoose.model('asteroids').countDocuments();
     const randomIndex = Math.floor(Math.random() * count);
-    return await this.model('asteroids').findOne().skip(randomIndex);
+    return await this.model('asteroids').findOne({status: 0}).skip(randomIndex);
 }
 
 module.exports = mongoose.model("asteroids", asteroidSchema)

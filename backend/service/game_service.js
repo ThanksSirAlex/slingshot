@@ -7,7 +7,8 @@ const History = require('../models/history')
 exports.loop = async function () {
     const idleMiners = await Miner.find({status: 0}).exec()
     for (const miner of idleMiners) {
-        await miner.setDestination()
+        await miner.findClosestAsteroid()
+        await miner.save()
     }
 
     let travellingMiners = await Miner.find({status: 1}).exec()
